@@ -9,7 +9,7 @@
 #   5, make clean to remove compilation temporaries.
 
 optflags = -Os -fomit-frame-pointer
-ldflags = -s -static
+ldflags = -s 
 
 
 ##########################################################################

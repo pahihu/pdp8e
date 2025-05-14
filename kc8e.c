@@ -9,6 +9,7 @@
 
 */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
 
@@ -105,7 +106,7 @@ struct box_rec {
 	XFontStruct* labinfo;	/* data about font (if label != NULL) */
 	int lablen;	  /* label length (if label != NULL) */
 	int labx,laby;	  /* coordinates of label (if label != NULL) */
-	void (* press)(); /* hook to call when mouse click in box */
+	void (* press)(struct box_rec*); /* hook to call when mouse click in box */
 			  /* pointer to box is passed as param to hook */
 	char* help;	  /* help message to display for box */
 	int state;	  /* state of box */
@@ -120,10 +121,9 @@ struct box_rec {
 #define linefillbox 3
 #define circlebox 4
 
-static void changeregs();
+static void changeregs(void);
 
-static boxshow( box )
-struct box_rec* box;
+static void boxshow( struct box_rec* box )
 {
 	struct box_rec* b;
 
@@ -172,8 +172,7 @@ struct box_rec* box;
 static struct box_rec* helpbox;
 static struct box_rec* helpok;
 
-static showhelpmsg( m )
-char * m;
+static void showhelpmsg( char *m )
 /* make a help message appear, with OK button armed to make it go away */
 {
 	helpbox->label = m;
@@ -183,10 +182,7 @@ char * m;
 	boxshow( helpbox );
 }
 
-static boxpress( x, y, button, box )
-int x, y;
-unsigned int button;
-struct box_rec* box;
+static void boxpress( int x, int y, unsigned int button, struct box_rec* box )
 {
 	struct box_rec* child;
 
@@ -211,8 +207,7 @@ struct box_rec* box;
 	}
 }
 
-static struct box_rec* makebox( b )
-struct box_rec* b;
+static struct box_rec* makebox( struct box_rec* b )
 /* copy from a prototype box to the real thing; used because many boxes
    can frequently be copied from one prototype, with only a few changed
    parameters for each
@@ -263,8 +258,7 @@ struct box_rec* b;
 /* tools for making PDP-8/E/F style toggle switches from boxes */
 /***************************************************************/
 
-static int toggleswitch(b)
-struct box_rec* b;
+static int toggleswitch(struct box_rec* b)
 /* change state of switch with top-level box b */
 {
 	struct box_rec* sup = b->replot;
@@ -281,25 +275,22 @@ struct box_rec* b;
 }
 
 struct box_rec* toggle = NOBOX;
-static void bounceinternal()
+static void bounceinternal(void)
 /* called internally to make a momentary switch change back */
 {
 	(void) toggleswitch( toggle );
 	toggle = NOBOX;
 }
 
-static void bounceswitch(b)
+static void bounceswitch(struct box_rec* b)
 /* called to mark a button-press on a momentary switch */
-struct box_rec* b;
 {
 	(void) toggleswitch(b);
 	changeregs();
 	toggle = b;
 }
 
-static struct box_rec* makeswitch( b, state )
-struct box_rec* b;
-int state;
+static struct box_rec* makeswitch( struct box_rec* b, int state )
 /* called to make a switch from prototype b with initial state 0 or 1 */
 {
 	struct box_rec* n = makebox( b );
@@ -343,7 +334,7 @@ static int datastate = 3;
 #define showmax 6
 static struct box_rec* showdatabox[showmax];  /* boxes in data select menu */
 
-static int getdata()
+static int getdata(void)
 {
 	switch (datastate) {
 	case showstate:
@@ -370,7 +361,7 @@ static int getdata()
 	}
 }
 
-static void changeregs()
+static void changeregs(void)
 {
 	int x;
 	int data = getdata();
@@ -433,13 +424,14 @@ struct device_rec {
 };
 static struct device_rec * devices = NULL;
 
-void register_device(m,d,u,n,l,f)
-int (* m)(); /* hook to mount file on device */
-void (* d)(); /* hook to dismount mounted file */
-int u; /* device unit */
-char * n; /* device name */
-char * l; /* descriptive device name */
-char * f; /* file attached to device */
+void register_device(
+        int (* m)(), /* hook to mount file on device */
+        void (* d)(), /* hook to dismount mounted file */
+        int u, /* device unit */
+        char * n, /* device name */
+        char * l, /* descriptive device name */
+        char * f /* file attached to device */
+)
 {
 	struct device_rec * temp;
 	temp = (struct device_rec *)malloc( sizeof( struct device_rec ) );
@@ -458,7 +450,7 @@ char * f; /* file attached to device */
 	}
 }
 
-close_devices()
+void close_devices(void)
 {
 	struct device_rec * temp = devices;
 	do {
@@ -467,8 +459,7 @@ close_devices()
 	} while (temp != devices);
 }
 
-dump_devices( f )
-FILE *f;
+void dump_devices( FILE *f )
 {
 	struct device_rec * temp = devices;
 	do {
@@ -483,9 +474,7 @@ FILE *f;
 	} while (temp != devices);
 }
 
-void mount_device( n, f )
-char * n;
-char * f;
+void mount_device( char * n, char * f )
 {
 	/* quietly try to mount files on devices, used during startup */
 	struct device_rec * temp = devices;
@@ -516,8 +505,7 @@ char * f;
 
 static void (* keypress)() = NULL; /* hook to call for keypress (char param) */
 
-static void backpress(b)
-struct box_rec* b;
+static void backpress(struct box_rec* b)
 /* mouseclick in background, do nothing */
 {
 }
@@ -531,7 +519,7 @@ static struct box_rec* panelbox; /* the box holding panel */
 static struct box_rec* heartbeat_box; /* heartbeat on the alternate panel*/
 static struct timer heartbeat_delay;
 
-static void heartbeat()
+static void heartbeat(int p)
 {
 	if (heartbeat_box->boxGC == blackGC) {
 		heartbeat_box->boxGC = greyGC;
@@ -547,14 +535,12 @@ static void heartbeat()
 	}
 }
 
-static void helppress(b)
-struct box_rec* b;
+static void helppress(struct box_rec* b)
 {
 	showhelpmsg( b->help );
 }
 
-static void powerpress(b)
-struct box_rec* b;
+static void powerpress(struct box_rec* b)
 /* mouseclick in exit button or power control area, shutdown */
 {
 	/* ... first clean up X ... */
@@ -562,8 +548,7 @@ struct box_rec* b;
 }
 
 #ifdef DEBUG
-static void tracepress(b)
-struct box_rec* b;
+static void tracepress(struct box_rec* b)
 /* mouse click in button requesting diagnostic trace information */
 {
 	output_debug();
@@ -574,8 +559,7 @@ struct box_rec* b;
 long int console_interval = default_console_interval;
 struct box_rec* console_interval_box; /* display box for interval */
 
-static void minuspress(b)
-struct box_rec* b;
+static void minuspress(struct box_rec* b)
 /* mouse click on minus box to decrease console interval */
 {
 	if (console_interval > microsecond) {
@@ -587,8 +571,7 @@ struct box_rec* b;
 	boxshow( console_interval_box );
 }
 
-static void pluspress(b)
-struct box_rec* b;
+static void pluspress(struct box_rec* b)
 /* mouse click on minus box to decrease console interval */
 {
 	if (console_interval < second) {
@@ -605,8 +588,7 @@ struct box_rec* device_name_box; /* display box for device name */
 struct box_rec* file_name_box; /* display box for file name */
 static int filenameactive = 0; /* state of file name acquisition routines */
 
-static void dnpress(b)
-struct box_rec* b;
+static void dnpress(struct box_rec* b)
 /* mouse click down box to scroll through list of devices */
 {
 	if (filenameactive == 0) { /* only allowed if not in mid name change */
@@ -623,8 +605,7 @@ struct box_rec* b;
 	}
 }
 
-static void filekeypress(c)
-char c;
+static void filekeypress(char c)
 /* keypress in file name box */
 {
 	int pos = file_name_box->lablen;
@@ -659,8 +640,7 @@ char c;
 	}
 }
 
-static void filepress(b)
-struct box_rec* b;
+static void filepress(struct box_rec* b)
 /* mouseclick in the box to mount a file on a device */
 {
 	if (filenameactive == 0) {
@@ -700,8 +680,7 @@ struct box_rec* b;
 	}
 }
 
-static void logopress(b)
-struct box_rec* b;
+static void logopress(struct box_rec* b)
 /* toggle between DEC logo and special control panel */
 {
 	if (filenameactive == 0) { /* do it only if file name is entered */
@@ -716,8 +695,7 @@ struct box_rec* b;
 	}
 }
 
-static void datapress(b)
-struct box_rec* b;
+static void datapress(struct box_rec* b)
 /* mouseclick in data display selection area */
 {
 	/* unhighlight previously selected option */
@@ -735,26 +713,23 @@ struct box_rec* b;
 	changeregs();
 }
 
-static void swpress(b)
+static void swpress(struct box_rec* b)
 /* mouseclick on sw switch */
-struct box_rec* b;
 {
 	sw = toggleswitch(b);
 	changeregs();
 }
 
-static void srpress(b)
+static void srpress(struct box_rec* b)
 /* mouseclick on some switch in switch register */
-struct box_rec* b;
 {
 	int bit = toggleswitch(b);
 	int bitnum = b->state;
 	sr = (sr & ~(04000 >> bitnum)) | (bit << (11-bitnum));
 }
 
-static void addrloadpress(b)
+static void addrloadpress(struct box_rec* b)
 /* mouseclick on load address switch */
-struct box_rec* b;
 {
 	if (run == 0) {
 		pc = sr;
@@ -772,9 +747,8 @@ struct box_rec* b;
 	bounceswitch(b);
 }
 
-static void extdaddrloadpress(b)
+static void extdaddrloadpress(struct box_rec* b)
 /* mouseclick on load extended address switch */
-struct box_rec* b;
 {
 #ifdef KM8E
 	if (run == 0) {
@@ -787,9 +761,8 @@ struct box_rec* b;
 	bounceswitch( b );
 }
 
-static void clearpress(b)
+static void clearpress(struct box_rec* b)
 /* mouseclick on clear switch */
-struct box_rec* b;
 {
 	if (run == 0) {
 		clearflags();
@@ -797,9 +770,8 @@ struct box_rec* b;
 	bounceswitch( b );
 }
 
-static void contpress(b)
+static void contpress(struct box_rec* b)
 /* mouseclick on cont switch */
-struct box_rec* b;
 {
 	if (run == 0) {
 		run = 1;
@@ -807,9 +779,8 @@ struct box_rec* b;
 	bounceswitch( b );
 }
 
-static void exampress(b)
+static void exampress(struct box_rec* b)
 /* mouseclick on exam switch */
-struct box_rec* b;
 {
 	if (run == 0) {
 #ifdef KM8E
@@ -830,25 +801,22 @@ struct box_rec* b;
 	bounceswitch( b );
 }
 
-static void haltpress(b)
+static void haltpress(struct box_rec* b)
 /* mouseclick on halt switch */
-struct box_rec* b;
 {
 	run = 0;
 	bounceswitch( b );
 }
 
-static void steppress(b)
+static void steppress(struct box_rec* b)
 /* mouseclick on single step switch */
-struct box_rec* b;
 {
 	run = 2;
 	bounceswitch( b );
 }
 
-static void deppress(b)
+static void deppress(struct box_rec* b)
 /* mouseclick on deposit switch */
-struct box_rec* b;
 {
 	if (run == 0) {
 #ifdef KM8E
@@ -870,9 +838,8 @@ struct box_rec* b;
 	bounceswitch( b );
 }
 
-static void helpokpress(b)
+static void helpokpress(struct box_rec* b)
 /* mouseclick on ok button in help message */
-struct box_rec* b;
 {
 	/* the following makes the help message box go away */
 	/* this undoes the work done by showhelp */
@@ -892,7 +859,7 @@ struct box_rec* b;
 /* the top-level box on the screen */
 static struct box_rec* boxlist;
 
-static makeboxes()
+static void makeboxes(void)
 #define h PDP8height /* full control panel height */
 #define i (h/10)     /* top and side indent margin */
 #define p (h/20)     /* partial margin indent */
@@ -1735,30 +1702,21 @@ static makeboxes()
 static struct timer console_delay;
 static struct timer halt_delay;
 
-extern void (* ttybreak) (); /* hook to tty for keyboard overrun */
+extern void (* ttybreak) (void); /* hook to tty for keyboard overrun */
 
-static handle_button_press(w, d, e)
-Widget w;
-caddr_t d;
-XButtonPressedEvent *e;
+static void handle_button_press(Widget w, void* d, XButtonPressedEvent *e)
 {
 	boxpress( e->x, e->y, e->button, boxlist );
 }
 
-static handle_button_release(w, d, e)
-Widget w;
-caddr_t d;
-XButtonReleasedEvent *e;
+static void handle_button_release(Widget w, void* d, XButtonReleasedEvent *e)
 {
 	if (toggle != NOBOX) { /* handle undoing of button press */
 		bounceinternal();
 	}
 }
 
-static handle_key_press(w, d, e)
-Widget w;
-caddr_t d;
-XKeyPressedEvent *e;
+static void handle_key_press(Widget w, void* d, XKeyPressedEvent *e)
 {
 	int shift = (ShiftMask & e->state) != 0;
 	int control = (ControlMask & e->state) != 0;
@@ -1803,17 +1761,14 @@ XKeyPressedEvent *e;
 	}
 }
 
-static handle_exposure(w, d, e)
-Widget w;
-caddr_t d;
-XExposeEvent *e;
+static void handle_exposure(Widget w, void* d, XExposeEvent *e)
 {
 	if (e->count == 0) { /* replot the whole thing */
 		boxshow( boxlist );
 	}
 }
 
-static void console_event()
+static void console_event(int _p)
 /* all update of console display happens here! */
 {
 	changeregs(); /* always display any changes to registers ! */
@@ -1837,9 +1792,7 @@ static void console_event()
 /* Window manager initialization */
 /*********************************/
 
-startwindow(argc,argv)
-int argc;
-char **argv;
+void startwindow(int argc,char **argv)
 {
 	Arg arg[25];
 	XGCValues gcvalues;
@@ -2069,17 +2022,14 @@ char **argv;
 
 } 
 
-kc8getinfo( d, s )
-Display * *d;
-int *s;
+void kc8getinfo( Display *d, int *s )
 /* call this from powerup in devices that need to manipulate windows */
 {
 	*d = dpy;
 	*s = scr;
 }
 
-Widget kc8makepopupshell( n )
-char* n;
+Widget kc8makepopupshell( char* n )
 /* call this from powerup in any device that needs its own windows */
 {
 	Arg arg[2];
@@ -2091,15 +2041,13 @@ char* n;
 /* Interface between cpu implementation and control panel */
 /**********************************************************/
 
-static void hitbreak() /* called by keyboard server to get attention */
+static void hitbreak(void) /* called by keyboard server to get attention */
 {
 	/* do nothing!  this was useful on the dumb-terminal
 	   version, but is not needed on a window-based system */
 }
 
-kc8power(argc,argv) /* power-on initialize */
-unsigned int argc;
-char **argv;
+void kc8power(int argc, char **argv) /* power-on initialize */
 {
 	init_timer( console_delay );
 	schedule( &console_delay, console_interval, console_event, 0 );
@@ -2109,15 +2057,15 @@ char **argv;
 	ttybreak = hitbreak;
 	startwindow( argc, argv );
 	makeboxes();
-   boxshow( boxlist );
+        boxshow( boxlist );
 }
 
-kc8init() /* console reset */
+void kc8init(void) /* console reset */
 {
 	/* nothing to do here */
 }
 
-kc8halt() /* respond to halt instruction */
+void kc8halt(void ) /* respond to halt instruction */
 {
 	/* force console event! */
 	schedule( &halt_delay, 0L, console_event, 0 );

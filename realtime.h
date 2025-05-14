@@ -41,21 +41,21 @@
 /**************************************************************************/
 
 struct timer {
-	long int delay;      /* the delay until the timer is to fire */
-	void (* action)();   /* the function to call when the timer fires */
-	int param;           /* parameter to action */
-	struct timer * next; /* the next timer to worry about after this */
+	long int delay;         /* the delay until the timer is to fire */
+	void (* action)(int p); /* the function to call when the timer fires */
+	int param;              /* parameter to action */
+	struct timer * next;    /* the next timer to worry about after this */
 };
 
 /* each timer must be initialized before the first time it is scheduled */
 #define init_timer(t) t.delay = -1
 
-void init_timers(); /* initialize entire timer subsystem */
+EXTERN void init_timers(void); /* initialize entire timer subsystem */
 
-void schedule(); /* schedule action a(p) on timer t after a delay of d */
-/*           ( struct timer * t, long int d, void (* a)(), int p ) */
+/* schedule action a(p) on timer t after a delay of d */
+EXTERN void schedule(struct timer * t, long int d, void (* a)(int p), int p);
 
-void fire_timer(); /* cause timer to fire at current time */
+EXTERN void fire_timer(void); /* cause timer to fire at current time */
 
 EXTERN long int countdown; /* the delay until the next timer expiration */
 

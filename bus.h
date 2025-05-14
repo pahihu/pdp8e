@@ -112,4 +112,63 @@ EXTERN int ub; /* the user mode buffer */
 */
 EXTERN int km8e_uif; /* user interrupt flag (local to KM8E but used in KK8E) */
 
+#include <stdio.h>
+
+EXTERN int ttygetc(void);
+EXTERN int ttypoll(void);
+EXTERN void (* ttybreak) (void);
+EXTERN void accumulate_debug(int p,int m);
+EXTERN void clearflags(void);
+EXTERN void close_devices(void);
+EXTERN void cr8fdev3(int op);
+EXTERN void cr8fdev7(int op);
+EXTERN void cr8finit(void);
+EXTERN void cr8fpower(void);
+EXTERN void dk8edev(int op);
+EXTERN void dk8einit(void );
+EXTERN void dk8epower(void);
+EXTERN void dump(void);
+EXTERN void dump_devices( FILE *f );
+EXTERN void dumpcore(void);
+EXTERN void getargs(int argc, char *argv[]);
+EXTERN void init_conversions(void);
+EXTERN void kc8halt(void);
+EXTERN void kc8init(void);
+EXTERN void kc8power(int argc, char **argv);
+EXTERN void kc8power(int argc,char** argv);
+EXTERN void kl8edev3(int op);
+EXTERN void kl8edev4(int op);
+EXTERN void kl8einit(void);
+EXTERN void kl8epower(void);
+EXTERN void km8edev(int op);
+EXTERN void km8einit(void);
+EXTERN void km8epower(void);
+EXTERN void mount_device( char * n, char * f );
+EXTERN void output_debug(void);
+EXTERN void pc8edev1(int op);
+EXTERN void pc8edev2(int op);
+EXTERN void pc8einit(void);
+EXTERN void pc8epower(void);
+EXTERN void powerdown(void);
+EXTERN void powerup(int argc,char** argv);
+EXTERN void readcore(void);
+EXTERN void register_device(int (* m)(int u, char * f), void (* d)(int u), int u, char * n, char * l, char * f);
+EXTERN void reset_debug(void);
+EXTERN void rim(void);
+EXTERN void rx8edev(int op);
+EXTERN void rx8einit(void);
+EXTERN void rx8epower(void);
+EXTERN void set_file_name(char * f, char * s);
+EXTERN void startwindow(int argc,char **argv);
+EXTERN void ttygets(char * buf,int len);
+EXTERN void ttyoctal( int num, int digits, char * suffix );
+EXTERN void ttyputc(char ch);
+EXTERN void ttyputs(char * buf);
+EXTERN void ttyraw(void);
+EXTERN void ttyrestore(void);
+EXTERN void ttystuff(char ch);
+EXTERN void vc8edev5(int op);
+EXTERN void vc8einit(void);
+EXTERN void vc8epower(void);
+
 #endif

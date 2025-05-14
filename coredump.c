@@ -15,7 +15,7 @@
 #include "bus.h"
 
 
-dump()
+void dump(void)
 /* dump all of memory */
 {
 	int ma = 0;
@@ -45,7 +45,7 @@ dump()
 }
 
 /* main program */
-main(argc, argv)
+int main(int argc, char *argv[])
 int argc;
 char *argv[];
 {
@@ -56,4 +56,5 @@ char *argv[];
 	}
 	readcore();
 	dump();
+   return 0;
 }

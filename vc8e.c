@@ -118,9 +118,10 @@ static GC redGC;                /* gc with for VR20 color CRT foreground */
 static GC greenGC;              /* gc with for VR20 color CRT foreground */
 
 /* must define type of this proc */
-Widget kc8makepopupshell();
+Widget kc8makepopupshell( char* n );
+extern void kc8getinfo( Display *d, int *s );
 
-static init_x()
+static void init_x(void)
 {
 	Arg arg[25];
 	XGCValues gcvalues;
@@ -198,20 +199,17 @@ static init_x()
 #endif
 }
 
-static void display_point(x,y)  /* put a point on the screen */
-int x, y;
+static void display_point(int x,int y)  /* put a point on the screen */
 {
         XDrawPoint(dpy, XtWindow(crt), beamGC, x, PIXELS-y);
 }
 
-static void reset_point(x,y)    /* remove a point from the screen */
-int x, y;
+static void reset_point(int x,int y)    /* remove a point from the screen */
 {
         XDrawPoint(dpy, XtWindow(crt), blackGC, x, PIXELS-y);
 }
 
-static void flood_screen(c)	/* flood the screen with color c */
-GC c;
+static void flood_screen(GC c)	/* flood the screen with color c */
 {
 	XFillRectangle(dpy, XtWindow(crt), c, 0, 0, PIXELS, PIXELS );
 }
@@ -255,7 +253,7 @@ static short int point_count[PIXELS][PIXELS];
 /* timer used to simulate decay of points on the screen */
 static struct timer plot_timer; /* time until next plotted point winks out */
 
-static void remove_point()
+static void remove_point(void)
 {
 	int x,y;
 
@@ -280,7 +278,7 @@ static void remove_point()
 	}
 }
 
-static void add_point()
+static void add_point(void)
 {
 	int x,y;
 
@@ -339,8 +337,7 @@ static struct timer VR20_timer; /* time delay for color change */
 static struct timer TEK_timer;  /* time delay for erase pulse */
 static int done_timer_count;
 
-static setdoneflag(p)
-int p;
+static void setdoneflag(int p)
 {
 	/* only set done if all done-timers are expired */
 	if (done_timer_count > 0) {
@@ -356,8 +353,7 @@ int p;
 	}
 }
 
-static enderase(p)
-int p;
+static void enderase(int p)
 {
 	int i, j;
 	for(i =0; i < PIXELS; i++)
@@ -368,7 +364,7 @@ int p;
 	setdoneflag(p);
 }
 
-static resetdoneflag()
+static void resetdoneflag(void)
 {
 	if (enab_stat_reg & done_flag) {
 		enab_stat_reg &= ~done_flag;
@@ -383,7 +379,7 @@ static resetdoneflag()
 /******************/
 
 
-vc8epower() /* global initialize */
+void vc8epower(void) /* global initialize */
 {
 	int i,j;
 
@@ -408,7 +404,7 @@ vc8epower() /* global initialize */
 }
 
 
-vc8einit() /* console reset */
+void vc8einit(void) /* console reset */
 {
 	enab_stat_reg = 0;
 }
@@ -417,8 +413,7 @@ vc8einit() /* console reset */
 /* IOT Instructions */
 /********************/
 
-vc8edev5(op)
-int op;
+void vc8edev5(int op)
 {
         switch (op) {
 

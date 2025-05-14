@@ -56,8 +56,7 @@ static int interrupt_enable;
 /* Device implementation */
 /*************************/
 
-static void tick_event(p)
-int p;
+static void tick_event(int p)
 { /* called from timer when a the real-time clock ticks */
 	if (tick_flag == 0) {
 		/* clock ticks are no-ops if the flag is already set */
@@ -74,13 +73,13 @@ int p;
 /* Initialization used by CAF and reset switch */
 /***********************************************/
 
-dk8epower() /* power-on initialize */
+void dk8epower(void) /* power-on initialize */
 {
 	init_timer(tick_delay);
 	schedule( &tick_delay, tick_time / 2, &tick_event, 0 );
 }
 
-dk8einit() /* console reset */
+void dk8einit(void ) /* console reset */
 {
 	tick_flag = 0;
 	interrupt_enable = 1;
@@ -91,8 +90,7 @@ dk8einit() /* console reset */
 /* IOT Instructions */
 /********************/
 
-dk8edev(op)
-int op;
+void dk8edev(int op)
 {
 	switch (op) {
 	case 00: /* no operation */

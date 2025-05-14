@@ -8,8 +8,8 @@
 #   4, make coremake if you want to convert RIM binaries to memory images.
 #   5, make clean to remove compilation temporaries.
 
-optflags = -Os -fomit-frame-pointer
-ldflags = -s -static
+optflags = -Os -fomit-frame-pointer -I/usr/X11/include
+ldflags = -s
 
 
 ##########################################################################

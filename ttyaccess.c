@@ -14,16 +14,22 @@
    <bsd/sgtty.h> and the code can be compiled with the bsd library */
 
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #define TERMIOS 1
 #endif
 
 #ifdef TERMIOS
 #include <termios.h>
 #include <sys/ioctl.h>
+# ifdef __APPLE__
+#  define TCGETS TIOCGETA
+#  define TCSETS TIOCSETA
+# endif
 #else
 #include <sgtty.h>
 #endif
@@ -67,14 +73,17 @@ static struct termios oldstate; /* tty state prior to reset */
 static struct sgttyb oldstate; /* tty state prior to reset */
 #endif
 
-static void mykill(arg)  /* called to kill process */
-int arg; /* ignored */
+void ttyrestore(void);  /* forward declaration */
+
+static void mykill(     /* called to kill process */
+        int arg         /* ignored */
+)
 {
 	ttyrestore();
 	exit(-1);
 }
 
-ttyraw() /* save tty state and convert to raw mode */
+void ttyraw(void) /* save tty state and convert to raw mode */
 {
 	/* take over the interactive terminal */
 	{ /* get old TTY mode for restoration on exit */
@@ -94,7 +103,9 @@ ttyraw() /* save tty state and convert to raw mode */
 		newstate.c_iflag &= ~INLCR; /* don't convert nl to cr */
 		newstate.c_iflag &= ~IGNCR; /* don't ignore cr */
 		newstate.c_iflag &= ~ICRNL; /* don't convert cr to nl */
+#ifndef __APPLE__
 		newstate.c_iflag &= ~IUCLC; /* don't map upper to lower */
+#endif
 		newstate.c_iflag &= ~IXON;  /* don't enable ^S/^Q on output */
 		newstate.c_iflag &= ~IXOFF; /* don't enable ^S/^Q on input */
 		newstate.c_oflag &= ~OPOST; /* don't enable output processing */
@@ -119,7 +130,7 @@ ttyraw() /* save tty state and convert to raw mode */
 	}
 }
 
-ttyrestore() /* return console to user */
+void ttyrestore(void) /* return console to user */
 {
 #ifdef TERMIOS
 	ioctl( keyboard, TCSETS, &oldstate );
@@ -133,10 +144,9 @@ ttyrestore() /* return console to user */
 /* user I/O routines */
 /*********************/
 
-void (* ttybreak) () = NULL; /* set by user, called when 5 consec ^C seen */
+void (* ttybreak) (void) = NULL; /* set by user, called when 5 consec ^C seen */
 
-ttyputc(ch) /* put character to console */
-char ch;
+void ttyputc(char ch) /* put character to console */
 {
 	int count;
 	char buf = ch;
@@ -155,8 +165,7 @@ static int stuffhead = 0; /* head pointer for stuffing queue */
 static int stufftail = 0; /* tail pointer for stuffing queue */
 static char stuffqueue[stufflen];
 
-void ttystuff(ch) /* stuff a char into input stream from auxiliary source */
-char ch;
+void ttystuff(char ch) /* stuff a char into input stream from auxiliary source */
 {
 	int newtail = (stufftail + 1) % stufflen;
 	if (newtail != stuffhead) { /* discards excess input */
@@ -165,7 +174,7 @@ char ch;
 	}
 }
 
-int ttypoll() /* poll for a character from the console */
+int ttypoll(void) /* poll for a character from the console */
 {
 	int count;
 	char buf;
@@ -210,7 +219,7 @@ int ttypoll() /* poll for a character from the console */
 	}
 }
 
-int ttygetc() /* blocking 7 bit read from console */
+int ttygetc(void) /* blocking 7 bit read from console */
 {
 	int count;
 	char buf;
@@ -238,8 +247,7 @@ int ttygetc() /* blocking 7 bit read from console */
 	return buf & 0177;
 }
 
-ttyputs(buf) /* put string to console */
-char * buf;
+void ttyputs(char * buf) /* put string to console */
 {
 	int count;
 	for (count = 0; buf[count] != '\0'; count++) {;};
@@ -247,9 +255,7 @@ char * buf;
 	fsync( display );
 }
 
-ttygets(buf,len) /* get string from console */
-char * buf;
-int len;
+void ttygets(char * buf,int len) /* get string from console */
 {
 	int i = 0;
 	int ch;

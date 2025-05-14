@@ -15,7 +15,7 @@
 #include "bus.h"
 
 
-rim()
+void rim(void)
 /* rim loader (logic reproduced as closely as possible from DEC documents) */
 {
 	int c, cc;
