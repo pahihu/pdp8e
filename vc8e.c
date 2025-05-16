@@ -119,7 +119,7 @@ static GC greenGC;              /* gc with for VR20 color CRT foreground */
 
 /* must define type of this proc */
 Widget kc8makepopupshell( char* n );
-extern void kc8getinfo( Display *d, int *s );
+extern void kc8getinfo( Display **d, int *s );
 
 static void init_x(void)
 {
@@ -253,7 +253,7 @@ static short int point_count[PIXELS][PIXELS];
 /* timer used to simulate decay of points on the screen */
 static struct timer plot_timer; /* time until next plotted point winks out */
 
-static void remove_point(void)
+static void remove_point(int dummy)
 {
 	int x,y;
 
@@ -272,7 +272,7 @@ static void remove_point(void)
 	if ( head != tail ){
 		queue_interval -= point_queue[head].delay;
 		schedule( &plot_timer, point_queue[head].delay,
-			  remove_point, NULL);
+			  remove_point, 0);
 	} else {
 		queue_interval = 0;
 	}
@@ -313,7 +313,7 @@ static void add_point(void)
 	point_queue[tail].x = x;
 	point_queue[tail].y = y;
 	if(head == tail){ /* empty list, therefore timer is not set */
-		schedule( &plot_timer, PERSISTANCE, remove_point, NULL);
+		schedule( &plot_timer, PERSISTANCE, remove_point, 0);
 		queue_interval = 0;
 	} else {
 		long int d;
@@ -436,7 +436,7 @@ void vc8edev5(int op)
 		x_reg =  ac & 01777;  /* 10 bits only! */
 		/* wait for to settle */
 		done_timer_count++;
-		schedule(&dilx_timer, SETTLING_INTERVAL, setdoneflag, NULL);
+		schedule(&dilx_timer, SETTLING_INTERVAL, setdoneflag, 0);
                 break;
 
         case 04: /* DILY */
@@ -444,7 +444,7 @@ void vc8edev5(int op)
 		y_reg = ac & 01777;  /* 10 bits only! */
 		/* wait for to settle */
 		done_timer_count++;
-		schedule(&dily_timer, SETTLING_INTERVAL, setdoneflag, NULL);
+		schedule(&dily_timer, SETTLING_INTERVAL, setdoneflag, 0);
                 break;
 
         case 05: /* DIXY */
@@ -477,7 +477,7 @@ void vc8edev5(int op)
 					delay = 1600 * microsecond;
 				}
 				done_timer_count++;
-				schedule(&VR20_timer, delay, setdoneflag, NULL);
+				schedule(&VR20_timer, delay, setdoneflag, 0);
 			}
 			if (enab_stat_reg & erase) {
 				/* -- erase Tex storage scope screen -- */
@@ -487,7 +487,7 @@ void vc8edev5(int op)
 				ac = enab_stat_reg & ~erase;  /*this here---*/
 				delay = 50 * millisecond;
 				done_timer_count++;
-				schedule(&TEK_timer, delay, enderase, NULL);
+				schedule(&TEK_timer, delay, enderase, 0);
 			}
 			ac = 00000;
 		}

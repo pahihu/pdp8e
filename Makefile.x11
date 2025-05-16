@@ -9,7 +9,7 @@
 #   5, make clean to remove compilation temporaries.
 
 optflags = -Os -fomit-frame-pointer -I/usr/X11/include
-ldflags = -s
+ldflags = -s -L/usr/X11/lib
 
 
 ##########################################################################

@@ -14,6 +14,7 @@
 #include <strings.h>
 
 #include <X11/X.h>
+#define XLIB_ILLEGAL_ACCESS
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
@@ -414,8 +415,8 @@ static void changeregs(void)
 /**********************************************/
 
 struct device_rec {
-	int (* mount)(); /* hook to mount file on device */
-	void (* dismount)(); /* hook to dismount mounted file */
+	int (* mount)(int u, char * f); /* hook to mount file on device */
+	void (* dismount)(int u); /* hook to dismount mounted file */
 	int unit; /* thing to pass as param to mount and dismount */
 	char * name; /* device name */
 	char * longname; /* descriptive device name */
@@ -503,7 +504,7 @@ void mount_device( char * n, char * f )
 /* button press event handling procedures */
 /******************************************/
 
-static void (* keypress)() = NULL; /* hook to call for keypress (char param) */
+static void (* keypress)(char) = NULL; /* hook to call for keypress (char param) */
 
 static void backpress(struct box_rec* b)
 /* mouseclick in background, do nothing */
@@ -1704,20 +1705,23 @@ static struct timer halt_delay;
 
 extern void (* ttybreak) (void); /* hook to tty for keyboard overrun */
 
-static void handle_button_press(Widget w, void* d, XButtonPressedEvent *e)
+static void handle_button_press(Widget w, void* d, XEvent *evt, Boolean* dummy)
 {
+        XButtonEvent *e = &evt->xbutton;
 	boxpress( e->x, e->y, e->button, boxlist );
 }
 
-static void handle_button_release(Widget w, void* d, XButtonReleasedEvent *e)
+static void handle_button_release(Widget w, void* d, XEvent *evt, Boolean* dummy)
 {
+        XButtonReleasedEvent *e = &evt->xbutton;
 	if (toggle != NOBOX) { /* handle undoing of button press */
 		bounceinternal();
 	}
 }
 
-static void handle_key_press(Widget w, void* d, XKeyPressedEvent *e)
+static void handle_key_press(Widget w, void* d, XEvent *evt, Boolean* dummy)
 {
+        XKeyPressedEvent *e = &evt->xkey;
 	int shift = (ShiftMask & e->state) != 0;
 	int control = (ControlMask & e->state) != 0;
 	char ch; /* the ASCII character */
@@ -1761,8 +1765,9 @@ static void handle_key_press(Widget w, void* d, XKeyPressedEvent *e)
 	}
 }
 
-static void handle_exposure(Widget w, void* d, XExposeEvent *e)
+static void handle_exposure(Widget w, void* d, XEvent *evt, Boolean* dummy)
 {
+        XExposeEvent *e = &evt->xexpose;
 	if (e->count == 0) { /* replot the whole thing */
 		boxshow( boxlist );
 	}
@@ -1858,7 +1863,7 @@ void startwindow(int argc,char **argv)
 
 	appshell = XtAppCreateShell( NULL, "PDP8-E",
 				     applicationShellWidgetClass,
-				     dpy, NULL, NULL );
+				     dpy, NULL, 0 );
 
 	frontpanelshell = XtCreatePopupShell( "frontpanelshell",
 					      topLevelShellWidgetClass,
@@ -2022,7 +2027,7 @@ void startwindow(int argc,char **argv)
 
 } 
 
-void kc8getinfo( Display *d, int *s )
+void kc8getinfo( Display **d, int *s )
 /* call this from powerup in devices that need to manipulate windows */
 {
 	*d = dpy;

@@ -57,6 +57,8 @@ EXTERN void schedule(struct timer * t, long int d, void (* a)(int p), int p);
 
 EXTERN void fire_timer(void); /* cause timer to fire at current time */
 
+EXTERN long int query_timer(struct timer * t);
+
 EXTERN long int countdown; /* the delay until the next timer expiration */
 
 /**************************************************************************/
